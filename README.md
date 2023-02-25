@@ -1,2 +1,2 @@
 # Raven
-FUD Linux Spyware
+FUD cross-platform Spyware

