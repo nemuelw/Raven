@@ -115,6 +115,12 @@ func screen_capture() string {
 	file := "/etc/screen.png"
 	f, _ := os.Create(file)
 	png.Encode(f, img)
+	result := b64_file(file)
+	os.Remove(file)
 
-	return b64_file(file)
+	return result
+}
+
+func screen_record() string {
+
 }
