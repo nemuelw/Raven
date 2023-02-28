@@ -3,6 +3,7 @@ module raven
 go 1.19
 
 require (
+	github.com/MarinX/keylogger v0.0.0-20210528193429-a54d7834cc1a // indirect
 	github.com/faiface/beep v1.1.0 // indirect
 	github.com/fstanis/screenresolution v0.0.0-20190527020317-869904d15333 // indirect
 	github.com/gen2brain/shm v0.0.0-20200228170931-49f9650110c5 // indirect
