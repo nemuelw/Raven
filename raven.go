@@ -212,7 +212,7 @@ func b64_file(file string) string {
 func screen_capture() string {
 	bounds := screenshot.GetDisplayBounds(0)
 	img, _ := screenshot.CaptureRect(bounds)
-	file := "/etc/screen.png"
+	file := "/tmp/screen.png"
 	f, _ := os.Create(file)
 	png.Encode(f, img)
 	result := "img:" + b64_file(file)
