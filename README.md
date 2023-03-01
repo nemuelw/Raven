@@ -1,6 +1,6 @@
 # Raven
 Faily undetectable Linux Spyware
-![img](https://github.com/nemyzyxt/Raven/)
+![img](https://github.com/nemzyxt/Raven/blob/main/scrshot/fud.png?raw=true)
 
 ## DISCLAIMER :
 I will not be responsible for any damage that may arise out of unethical use of this project . Have fun :)
