@@ -18,3 +18,7 @@ I will not be responsible for any damage that may arise out of unethical use of 
 2. Navigate to the project directory
 3. Feel free to modify C2 Address in the raven.go file to point to your C2
 4. Run the command ```go build -ldflags="-s -w" delta.go``` to create the executable(ELF) file
+
+## NOTE :
+A C2 Server for Raven is currently in development and will be released soon !
+In the meantime, you can use tools like netcat though you won't have the convenience of enjoying all the functionality present in the Spyware :(
