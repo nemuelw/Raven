@@ -1,3 +1,9 @@
+/*
+	Author : Nemuel Wainaina
+	Raven : A fairly undetectable Linux Spyware
+*/
+
+
 package main
 
 import (
